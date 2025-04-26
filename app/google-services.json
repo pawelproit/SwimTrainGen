@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "931861069175",
+    "project_id": "swimtraingen",
+    "storage_bucket": "swimtraingen.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:931861069175:android:dd689e0cc35137c4f23572",
+        "android_client_info": {
+          "package_name": "com.example.swimtraingen"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDMXkLMH5OA5diWqRnQnpruzuUsCDnBKUM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
