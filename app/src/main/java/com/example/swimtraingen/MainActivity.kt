@@ -1,8 +1,5 @@
 package com.example.swimtraingen
 
-
-
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -97,91 +94,67 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
 import com.google.android.gms.common.api.ApiException
-import android.widget.Toast
-
-
-
 
 
 class MainActivity : ComponentActivity() {
-
-    private lateinit var googleSignInClient: GoogleSignInClient
-    private lateinit var firebaseAuth: FirebaseAuth
-    private val RC_SIGN_IN = 9001
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         FirebaseApp.initializeApp(this)
-
-        firebaseAuth = FirebaseAuth.getInstance()
-
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(getString(R.string.default_web_client_id))
-            .requestEmail()
-            .build()
-
-        googleSignInClient = GoogleSignIn.getClient(this, gso)
-
         setContent {
-            UserFlowApp(
-                onGoogleLoginClick = { signInWithGoogle() }
-            )
+            UserFlowApp()
         }
-    }
-
-    private fun signInWithGoogle() {
-        val signInIntent = googleSignInClient.signInIntent
-        startActivityForResult(signInIntent, RC_SIGN_IN)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == RC_SIGN_IN) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
-            try {
-                val account = task.getResult(ApiException::class.java)!!
-                firebaseAuthWithGoogle(account.idToken!!)
-            } catch (e: ApiException) {
-                Log.w("GoogleSignIn", "Google sign in failed", e)
-            }
-        }
-    }
-
-    private fun firebaseAuthWithGoogle(idToken: String) {
-        val credential = GoogleAuthProvider.getCredential(idToken, null)
-        firebaseAuth.signInWithCredential(credential)
-            .addOnCompleteListener(this) { task ->
-                if (task.isSuccessful) {
-                    val user = firebaseAuth.currentUser
-                    Toast.makeText(this, "Zalogowano: ${user?.displayName}", Toast.LENGTH_SHORT).show()
-
-                    // przejście do kolejnego ekranu np. AgeScreen
-                    setContent {
-                        UserFlowApp(
-                            onGoogleLoginClick = { signInWithGoogle() },
-                            startDestination = "age"
-                        )
-                    }
-                } else {
-                    Toast.makeText(this, "Logowanie nieudane", Toast.LENGTH_SHORT).show()
-                }
-            }
     }
 }
 
+
 @Composable
-fun UserFlowApp(
-    onGoogleLoginClick: () -> Unit = {},
-    startDestination: String = "welcome"
-) {
+fun UserFlowApp() {
+
+    val context = LocalContext.current
     val navController = rememberNavController()
     val viewModel: UserInputViewModel = viewModel()
 
-    NavHost(navController = navController, startDestination = startDestination) {
+    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+        .requestIdToken("931861069175-b91dcjq3jv0mj6uburf928jrb4oq0rfr.apps.googleusercontent.com") // <- wpisz swój
+        .requestEmail()
+        .build()
 
-        composable("welcome") { WelcomeScreen(navController, onGoogleLoginClick) }
+    val googleSignInClient = GoogleSignIn.getClient(context, gso)
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+            FirebaseAuth.getInstance().signInWithCredential(credential)
+                .addOnCompleteListener { authResult ->
+                    if (authResult.isSuccessful) {
+                        Log.d("Login", "Sign in successful")
+                        navController.navigate("welcome") {
+                            popUpTo("login") { inclusive = true } // <- usuwa login z backstacka
+                        }
+                    } else {
+                        Log.e("Login", "Sign in failed", authResult.exception)
+                        navController.navigate("welcome") {
+                            popUpTo("login") { inclusive = true } // <- usuwa login z backstacka
+                        }
+                    }
+                }
+        } catch (e: ApiException) {
+            navController.navigate("welcome") {
+                popUpTo("login") { inclusive = true } // <- usuwa login z backstacka
+            }
+            Log.e("Login", "Google sign in failed", e)
+        }
+    }
+
+    NavHost(navController = navController, startDestination = "login") {
+
+        composable("welcome") { WelcomeScreen(navController) }
         composable("age") { AgeScreen(navController, viewModel) }
         composable("gender") { GenderScreen(navController, viewModel) }
         composable("weight") { WeightScreen(navController, viewModel) }
@@ -191,6 +164,13 @@ fun UserFlowApp(
         composable("days") { TrainingDaysScreen(navController, viewModel) }
         composable("main") { MainScreen(viewModel) }
         composable("debug") { DebugAllCollectionsScreen() }
+
+        composable("login") {
+            LoginScreen {
+                val signInIntent = googleSignInClient.signInIntent
+                launcher.launch(signInIntent)
+            }
+        }
     }
 }
 
@@ -207,9 +187,34 @@ class UserInputViewModel : ViewModel() {
 
 }
 
+@Composable
+fun LoginScreen(onSignInClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DeepBlack)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("Zaloguj się, aby kontynuować", color = TextWhite)
+        Spacer(modifier = Modifier.height(20.dp))
+        Button(
+            onClick = onSignInClick,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = AccentBlue,
+                contentColor = TextWhite
+            )
+        ) {
+            Text("Zaloguj się przez Google")
+        }
+    }
+}
+
+
 
 @Composable
-fun WelcomeScreen(navController: NavController, onGoogleLoginClick: () -> Unit) {
+fun WelcomeScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -228,32 +233,30 @@ fun WelcomeScreen(navController: NavController, onGoogleLoginClick: () -> Unit) 
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(vertical = 16.dp)
         )
-
         Button(
-            onClick = onGoogleLoginClick,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = AccentBlue,
-                contentColor = TextWhite
-            ),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Zaloguj się przez Google")
-        }
-
-        Button(
-            onClick = { navController.navigate("debug") },
+            onClick = { navController.navigate("age") },
             colors = ButtonDefaults.buttonColors(
                 containerColor = NavyBlue,
                 contentColor = TextWhite
             ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp)
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Dalej")
+        }
+        Button(
+            onClick = { navController.navigate("debug") },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = AccentBlue,
+                contentColor = TextWhite
+            ),
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
         ) {
             Text("Debug Firestore")
         }
+
     }
 }
+
 
 
 @Composable
