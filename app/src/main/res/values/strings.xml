@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">SwimTrainGen</string>
+    <string name="default_web_client_id">931861069175-ko9unms207hs622dkulpkjclmbkqou0m.apps.googleusercontent.com</string>
+
 </resources>

@@ -12,7 +12,20 @@
           "package_name": "com.example.swimtraingen"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "931861069175-b91dcjq3jv0mj6uburf928jrb4oq0rfr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.swimtraingen",
+            "certificate_hash": "de202224b828befa89cae87b98a415d76e9b0376"
+          }
+        },
+        {
+          "client_id": "931861069175-ko9unms207hs622dkulpkjclmbkqou0m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDMXkLMH5OA5diWqRnQnpruzuUsCDnBKUM"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "931861069175-ko9unms207hs622dkulpkjclmbkqou0m.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
